@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --bg: #0A0E11;
+  --surface-1: #11171C;
+  --surface-2: #161D24;
+  --surface-3: #1C242C;
+  --border: #222C36;
+  --border-soft: #1A222B;
+  --teal: #0E9E8E;
+  --teal-hover: #0B7F73;
+  --teal-light: #14B8A6;
+  --text-primary: #FFFFFF;
+  --text-secondary: #9BA8B5;
+  --text-tertiary: #6B7785;
+  --text-muted: #4A5563;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --info: #3B82F6;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: #1C242C; border-radius: 8px; }
+*::-webkit-scrollbar-thumb:hover { background: #222C36; }
+
+.surface-grad {
+  background: linear-gradient(180deg, #11171C 0%, #0F1418 100%);
+}
+
+.teal-glow {
+  box-shadow: 0 0 0 1px rgba(14,158,142,0.4), 0 8px 32px -8px rgba(14,158,142,0.35);
+}
+
+.card-hover {
+  transition: transform 200ms ease, border-color 200ms ease, background 200ms ease;
+}
+.card-hover:hover {
+  border-color: #2A3744;
+  background: #161D24;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.4); }
+}
+.pulse-dot { animation: pulseDot 2s ease-in-out infinite; }
