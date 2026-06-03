@@ -11,7 +11,7 @@ export function Card({
 }) {
   return (
     <div
-      className={`rounded-[16px] border border-[#1A222B] bg-[#11171C] transition-colors hover:border-[#222C36] ${padded ? 'p-5' : ''} ${className}`}
+      className={`rounded-2xl border border-[#E5E7EB] bg-white card-shadow ${padded ? 'p-6' : ''} ${className}`}
     >
       {children}
     </div>
@@ -27,8 +27,8 @@ export function SectionTitle({
 }) {
   return (
     <div className="mb-4">
-      <h2 className="text-[15px] font-bold text-white">{title}</h2>
-      {subtitle && <p className="text-[12px] text-[#6B7785] mt-1">{subtitle}</p>}
+      <h2 className="text-[15px] font-bold text-[#111827]">{title}</h2>
+      {subtitle && <p className="text-[12px] text-[#6B7280] mt-1">{subtitle}</p>}
     </div>
   );
 }
@@ -36,12 +36,12 @@ export function SectionTitle({
 type PillTone = 'neutral' | 'teal' | 'success' | 'warning' | 'danger' | 'info';
 
 const toneStyles: Record<PillTone, string> = {
-  neutral: 'bg-[#222C36] text-[#9BA8B5]',
-  teal: 'bg-[#0E9E8E]/20 text-[#14B8A6] border border-[#0E9E8E]/40',
-  success: 'bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/40',
-  warning: 'bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/40',
-  danger: 'bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/40',
-  info: 'bg-[#3B82F6]/20 text-[#3B82F6] border border-[#3B82F6]/40',
+  neutral: 'bg-[#F3F4F6] text-[#6B7280]',
+  teal: 'bg-[#0E9E8E]/10 text-[#0B7F73] border border-[#0E9E8E]/25',
+  success: 'bg-[#10B981]/10 text-[#059669] border border-[#10B981]/25',
+  warning: 'bg-[#F59E0B]/12 text-[#B45309] border border-[#F59E0B]/30',
+  danger: 'bg-[#EF4444]/10 text-[#DC2626] border border-[#EF4444]/25',
+  info: 'bg-[#3B82F6]/10 text-[#2563EB] border border-[#3B82F6]/25',
 };
 
 export function Pill({
@@ -55,7 +55,7 @@ export function Pill({
 }) {
   return (
     <div
-      className={`inline-flex items-center font-semibold rounded-full transition-colors ${
+      className={`inline-flex items-center font-semibold rounded-full ${
         toneStyles[tone]
       } ${small ? 'px-2.5 py-0.5 text-[10px]' : 'px-3 py-1 text-[11px]'}`}
     >

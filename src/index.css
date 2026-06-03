@@ -1,59 +1,55 @@
-@import "tailwindcss";
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+@import "tailwindcss";
+
 :root {
-  --bg: #0A0E11;
-  --surface-1: #11171C;
-  --surface-2: #161D24;
-  --surface-3: #1C242C;
-  --border: #222C36;
-  --border-soft: #1A222B;
+  --bg: #F8F9FA;
+  --surface: #FFFFFF;
+  --border: #E5E7EB;
   --teal: #0E9E8E;
   --teal-hover: #0B7F73;
-  --teal-light: #14B8A6;
-  --text-primary: #FFFFFF;
-  --text-secondary: #9BA8B5;
-  --text-tertiary: #6B7785;
-  --text-muted: #4A5563;
-  --success: #10B981;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
   --warning: #F59E0B;
   --danger: #EF4444;
-  --info: #3B82F6;
 }
 
 html, body, #root {
   height: 100%;
-  background: var(--bg);
+  background: #F4F5F7;
   color: var(--text-primary);
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  font-feature-settings: 'cv11', 'ss01';
 }
 
 *::-webkit-scrollbar { width: 10px; height: 10px; }
 *::-webkit-scrollbar-track { background: transparent; }
-*::-webkit-scrollbar-thumb { background: #1C242C; border-radius: 8px; }
-*::-webkit-scrollbar-thumb:hover { background: #222C36; }
+*::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 8px; }
+*::-webkit-scrollbar-thumb:hover { background: #D1D5DB; }
 
-.surface-grad {
-  background: linear-gradient(180deg, #11171C 0%, #0F1418 100%);
+.card-shadow {
+  box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 2px 5px -1px rgba(16,24,40,0.08);
 }
-
-.teal-glow {
-  box-shadow: 0 0 0 1px rgba(14,158,142,0.4), 0 8px 32px -8px rgba(14,158,142,0.35);
+.card-shadow-lg {
+  box-shadow: 0 6px 18px -4px rgba(16,24,40,0.10), 0 3px 8px -2px rgba(16,24,40,0.06);
 }
 
 .card-hover {
-  transition: transform 200ms ease, border-color 200ms ease, background 200ms ease;
+  transition: box-shadow 200ms ease, border-color 200ms ease, background 200ms ease;
 }
 .card-hover:hover {
-  border-color: #2A3744;
-  background: #161D24;
+  background: #FAFBFC;
 }
 
 @keyframes pulseDot {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.4); }
+  50% { opacity: 0.4; transform: scale(1.5); }
 }
 .pulse-dot { animation: pulseDot 2s ease-in-out infinite; }
+
+@keyframes pulseRing {
+  0% { box-shadow: 0 0 0 0 rgba(14,158,142,0.35); }
+  70% { box-shadow: 0 0 0 10px rgba(14,158,142,0); }
+  100% { box-shadow: 0 0 0 0 rgba(14,158,142,0); }
+}
+.pulse-ring { animation: pulseRing 2s ease-out infinite; }
