@@ -1,14 +1,14 @@
-// shipper-monitor-version: 2026-05-28-comments-green-cursor-v1
+// shipper-monitor-version: 2026-06-09-pill-no-outline-v2
 (function () {
   "use strict";
 
-  const MONITOR_VERSION = "2026-05-28-comments-green-cursor-v1";
+  const MONITOR_VERSION = "2026-06-09-pill-no-outline-v2";
   const PREVIEW_POPUP_MESSAGE_TYPE = "PREVIEW_POPUP_REQUESTED";
   const PREVIEW_POPUP_WINDOW_NAME = "shipper-preview-popup";
   const OTT_QUERY_PARAM = "ott";
 
   const CONFIG = {
-    ALLOWED_ORIGINS: ["https://app.shipper.now/","https://app.shipper.now","https://staging.shipper.now"],
+    ALLOWED_ORIGINS: ["https://app.shipper.now","https://app.shipper.now","https://staging.shipper.now"],
     DEBOUNCE_DELAY: 250,
     MAX_STRING_LENGTH: 10000,
     HIGHLIGHT_COLOR: "#3b82f6",
@@ -1495,6 +1495,10 @@
     highlightOverlay: null,
     hoverOverlay: null,
     repeatedHoverOverlays: [], // Array of overlays for repeated elements
+    // The <img> a currently-shown "Click to replace image" pill drills into.
+    // When set, clicking the pill selects this image (opening the image
+    // editing popup) even though the box around it is what's selected.
+    pillImageTarget: null,
   };
 
   // Image-replace override map: keeps the chosen new src on a <img> even
@@ -1973,6 +1977,52 @@
     return { element: originalElement, shipperId: null };
   }
 
+  // An <img> is a leaf — its box IS the image, so there's nothing to edit on
+  // the <img> itself besides the picture. When an <img> lives inside a
+  // meaningful container, prefer selecting that container (so the user can
+  // edit its box: padding, margin, radius, background, etc.) and surface the
+  // <img> separately as the "drill into the image" target for the pill.
+  // This fixes the case where an image fills its wrapper and clicking always
+  // grabbed the image, leaving the wrapper unreachable.
+  function resolveImageContainerSelection(element) {
+    if (!element || element.tagName?.toLowerCase() !== "img") {
+      return { selectElement: element, imageTarget: null };
+    }
+    const parentStart = element.parentElement;
+    if (parentStart && parentStart !== document.body) {
+      const { element: container } = findElementWithShipperId(parentStart);
+      if (
+        container &&
+        container !== document.body &&
+        container !== document.documentElement
+      ) {
+        return { selectElement: container, imageTarget: element };
+      }
+    }
+    // Bare image with no meaningful container — select the image itself.
+    return { selectElement: element, imageTarget: element };
+  }
+
+  // Select an <img> directly (e.g. when the user clicks the image pill). This
+  // mirrors the tail of handleVisualEditorClick: move the highlight to the
+  // image and tell the parent webapp, which opens the image editing popup.
+  function selectImageElement(img) {
+    if (!img) return;
+    const prevPill = document.getElementById("shipper-image-replace-pill");
+    if (prevPill) prevPill.remove();
+    visualEditorState.pillImageTarget = null;
+    visualEditorState.selectedElement = img;
+    if (visualEditorState.hoverOverlay) {
+      visualEditorState.hoverOverlay.style.display = "none";
+    }
+    hideRepeatedHoverOverlays();
+    updateOverlay(visualEditorState.highlightOverlay, img);
+    postToParent({
+      type: "ELEMENT_SELECTED",
+      payload: getElementInfo(img),
+    });
+  }
+
   // If `el` is a wrapper or overlay positioned over an <img> (or contains an
   // <img> descendant), return that <img>. Otherwise return `el` unchanged.
   // Mirrors the retarget chain in handleVisualEditorClick so hover-detected
@@ -2084,6 +2134,18 @@
     if (target.id?.startsWith("shipper-visual-editor")) return;
     if (target.classList?.contains("shipper-visual-editor-repeated-hover"))
       return;
+    // The image-replace pill is our own button — it has its own hover effect
+    // and must never get the visual editing hover outline.
+    if (
+      target.id === "shipper-image-replace-pill" ||
+      target.closest?.("#shipper-image-replace-pill")
+    ) {
+      if (visualEditorState.hoverOverlay) {
+        visualEditorState.hoverOverlay.style.display = "none";
+      }
+      hideRepeatedHoverOverlays();
+      return;
+    }
 
     // Find the element with data-shipper-id (could be target or an ancestor)
     let { element: elementWithId, shipperId } =
@@ -2092,7 +2154,12 @@
     // Each repeated instance is its own individual element — highlight only the hovered one
     hideRepeatedHoverOverlays();
     if (visualEditorState.hoverOverlay) {
-      const elementToHighlight = elementWithId || target;
+      // Keep hover in sync with click: hovering an <img> highlights the box
+      // (container) that a click would select, not the image leaf.
+      const { selectElement } = resolveImageContainerSelection(
+        elementWithId || target,
+      );
+      const elementToHighlight = selectElement || elementWithId || target;
       updateOverlay(visualEditorState.hoverOverlay, elementToHighlight);
     }
   }
@@ -2113,6 +2180,18 @@
     if (target.id?.startsWith("shipper-visual-editor")) return;
     if (target.classList?.contains("shipper-visual-editor-repeated-hover"))
       return;
+
+    // Click landed on the image pill — drill into the image it points at
+    // (opening the image editing popup) instead of running normal selection.
+    if (
+      target.id === "shipper-image-replace-pill" ||
+      target.closest?.("#shipper-image-replace-pill")
+    ) {
+      if (visualEditorState.pillImageTarget) {
+        selectImageElement(visualEditorState.pillImageTarget);
+      }
+      return;
+    }
 
     // Find the element with data-shipper-id (could be target or an ancestor)
     // This ensures clicking on child elements selects the correct parent element
@@ -2227,23 +2306,39 @@
     // Remove previous pill
     const prevPill = document.getElementById("shipper-image-replace-pill");
     if (prevPill) prevPill.remove();
+    visualEditorState.pillImageTarget = null;
+
+    // For an <img> wrapped in a meaningful container, select the container
+    // (so its box is editable) and keep the image as the pill's drill-in
+    // target. Bare images and background-image boxes are returned unchanged.
+    const { selectElement: resolvedSelection, imageTarget } =
+      resolveImageContainerSelection(selectedElement);
+    selectedElement = resolvedSelection;
 
     visualEditorState.selectedElement = selectedElement;
 
     // Treat elements with a CSS background-image as image slots too
     const selBg = window.getComputedStyle(selectedElement).backgroundImage;
     const selHasBgImage = !!selBg && selBg !== "none" && selBg.includes("url(");
-    const isImageLike = selectedElement.tagName.toLowerCase() === "img" || selHasBgImage;
+    // The element the "Click to replace image" pill drills into: the wrapped
+    // <img> when we redirected selection to its container, otherwise the
+    // selected element itself when it's directly image-like.
+    const pillTarget =
+      imageTarget ||
+      (selectedElement.tagName.toLowerCase() === "img" || selHasBgImage
+        ? selectedElement
+        : null);
+    visualEditorState.pillImageTarget = pillTarget;
 
     // Apply "Click to replace image" pill for image elements
-    if (isImageLike) {
+    if (pillTarget) {
 
       // Create the floating pill — works on both light and dark backgrounds
       const pill = document.createElement("div");
       pill.id = "shipper-image-replace-pill";
 
       // Position pill centered at bottom of visible image area
-      const visibleEl = getVisibleBoundsElement(selectedElement);
+      const visibleEl = getVisibleBoundsElement(pillTarget);
       const visRect = visibleEl.getBoundingClientRect();
       const pillLeft = visRect.left + window.scrollX + (visRect.width - 212) / 2;
       const pillTop = visRect.bottom + window.scrollY - 38;
@@ -2264,12 +2359,13 @@
         border: 1.19px solid #16A085;
         border-radius: 9.49px;
         box-shadow: 0px 4px 6px -2px rgba(18, 26, 43, 0.1), 0px 2px 4px -2px rgba(18, 26, 43, 0.06);
-        pointer-events: none;
+        pointer-events: auto;
+        cursor: pointer;
         font-family: Inter, system-ui, sans-serif;
         left: ${pillLeft}px;
         top: ${pillTop + 8}px;
         opacity: 0;
-        transition: opacity 0.2s ease, top 0.2s ease;
+        transition: opacity 0.2s ease, top 0.2s ease, background 0.15s ease, box-shadow 0.15s ease;
       `;
 
       // Figma star icon + text
@@ -2280,6 +2376,18 @@
         </svg>
         <span style="font-size:12px;font-weight:400;line-height:18px;color:#525252;white-space:nowrap;">Click to replace image</span>
       `;
+
+      // Button hover effect — light teal tint + lifted shadow on hover
+      pill.addEventListener("mouseenter", () => {
+        pill.style.background = "rgba(240, 253, 249, 0.98)";
+        pill.style.boxShadow =
+          "0px 6px 10px -2px rgba(18, 26, 43, 0.14), 0px 3px 6px -2px rgba(18, 26, 43, 0.08)";
+      });
+      pill.addEventListener("mouseleave", () => {
+        pill.style.background = "rgba(255, 255, 255, 0.95)";
+        pill.style.boxShadow =
+          "0px 4px 6px -2px rgba(18, 26, 43, 0.1), 0px 2px 4px -2px rgba(18, 26, 43, 0.06)";
+      });
 
       document.body.appendChild(pill);
 
@@ -2508,6 +2616,10 @@
       type: "VISUAL_EDIT_READY",
       data: {
         url: window.location.href,
+        // The running monitor's version lets the parent detect a stale script
+        // (any version mismatch) and update + reload once — this is how fixes
+        // reach sandboxes created before the change.
+        version: MONITOR_VERSION,
         features: { imageOverride: true },
       },
     });
@@ -2538,11 +2650,16 @@
     });
     visualEditorState.repeatedHoverOverlays = [];
 
+    // Remove the image pill if one is showing
+    const pill = document.getElementById("shipper-image-replace-pill");
+    if (pill) pill.remove();
+
     // Remove event listeners
     document.removeEventListener("mousemove", handleVisualEditorMouseMove);
     document.removeEventListener("click", handleVisualEditorClick, true);
 
     visualEditorState.selectedElement = null;
+    visualEditorState.pillImageTarget = null;
 
     console.log("[Shipper Visual Editor] Disabled");
   }
@@ -2744,6 +2861,13 @@
 
         // Update selection state
         visualEditorState.selectedElement = parentElement;
+
+        // The image pill belonged to the previous (child) selection — drop it
+        const parentPill = document.getElementById(
+          "shipper-image-replace-pill",
+        );
+        if (parentPill) parentPill.remove();
+        visualEditorState.pillImageTarget = null;
 
         // Hide hover overlay
         if (visualEditorState.hoverOverlay) {

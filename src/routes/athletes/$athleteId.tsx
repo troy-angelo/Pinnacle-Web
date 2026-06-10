@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { athletes, sessions, files, getAthlete } from '../../lib/mock-data';
+import { sessions, getAthlete } from '../../lib/mock-data';
+import { useFilesStore } from '../../lib/files-store';
 import { Card, SectionTitle, Pill } from '../../components/Card';
 import { Avatar } from '../../components/Avatar';
 import { formatDay, formatTime } from '../../lib/format';
@@ -27,7 +28,7 @@ function AthleteDetail() {
     s => s.athleteId === athlete.id && s.status === 'Completed'
   ).sort((a, b) => +new Date(b.date) - +new Date(a.date));
 
-  const athleteFiles = files.filter(f => f.athleteId === athlete.id);
+  const athleteFiles = useFilesStore(s => s.files).filter(f => f.athleteId === athlete.id).sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
 
   return (
     <div className="p-8 max-w-[1400px] mx-auto space-y-6">
